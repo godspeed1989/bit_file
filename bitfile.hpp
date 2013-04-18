@@ -20,7 +20,7 @@ typedef struct bitfile
 	O_TYPE otype;
 	char * name;// file name
 	u8 * data;  // file data
-	u32 sizeb;  // file size in BITS
+	u32 capb;   // file capacity in BITS
 	// file position in bits = pos_B<<3 + pos_b
 	u32 pos_B;  // file pointer in Bytes
 	u8 pos_b;   // file pointer in bits(0~7), 0 ~ 'pos_b' is reached
@@ -49,9 +49,9 @@ typedef struct bitfile
 			strcpy(name, file);
 			fseek(fin, 0, SEEK_END);
 			u32 sizeB = ftell(fin);
-			sizeb = sizeB << 3;
+			capb = sizeB << 3;
 			data = (u8*)malloc(sizeB*sizeof(u8));
-			if(data)
+			if(data == NULL)
 				return -1;
 			fread(data, sizeB, 1, fin);
 			fclose(fin);
@@ -74,7 +74,7 @@ typedef struct bitfile
 		clean_and_init();
 		otype = READ;
 		strcpy(name, file);
-		sizeb = nbytes << 3;
+		capb = nbytes << 3;
 		data = (u8*)malloc(nbytes*sizeof(u8));
 		if(data)
 			return -1;
@@ -92,31 +92,36 @@ typedef struct bitfile
 	{
 		if(otype == WRITE || eof())
 			return 0;
-		if(pos_B*8 + pos_b + nbits >= sizeb)
-			nbits = sizeb - pos_B*8 - pos_b;
+		if(pos_B*8 + pos_b + nbits >= capb)
+			nbits = capb - pos_B*8 - pos_b;
 		u8 byte, tmpb;
 		u8 bits = nbits % 8;
 		u32 nbytes = nbits >> 3;
 		u8 * dst = (u8*)ptr;
 		// copy whole byte(s), pos_b will not changed.
-		u32 i;
-		for(i=0; i<nbytes && !eof(); i++)
+		u32 i = 0;
+		if(pos_b != 0)
 		{
-			byte = data[pos_B];
-			pos_B++;
-			if(pos_b != 0)
+			for(i=0; i<nbytes && !eof(); i++)
 			{
-				byte >>= pos_b;
+				byte = data[pos_B];
+				byte >>= pos_b; //move to lower bound
+				pos_B++;
 				tmpb = data[pos_B];
-				tmpb <<= (8-pos_b);
+				tmpb <<= (8-pos_b); //move upper
 				byte |= tmpb;
+				dst[i] = byte;
 			}
-			dst[i] = byte;
+		}
+		else
+		{
+			memcpy(dst, data+pos_B, nbytes);
+			pos_B += nbytes;
 		}
 		if(eof())
 			return i<<3;
-		// copy left bit(s) if we have
-		if(bits)
+		// read left bit(s) if we have
+		if(bits != 0)
 		{
 			byte = data[pos_B];
 			byte >>= pos_b; //move to lower bound
@@ -136,8 +141,8 @@ typedef struct bitfile
 				pos_B++;
 				tmpb = data[pos_B];
 				u8 left = bits - (8-pos_b); //left bits
-				tmpb &= (0xFF >> (8-left)); //get left at lower bound
-				tmpb <<= (bits-left); //move left upper, or 8-pos_b
+				tmpb &= (0xFF >> (8-left)); //get left bits at lower bound
+				tmpb <<= (bits-left); //move left bits upper, or 8-pos_b
 				byte |= tmpb;
 				pos_b = left;
 			}
@@ -157,19 +162,19 @@ typedef struct bitfile
 			return 0;
 		if(data == NULL)
 		{
-			const u32 size = 20*1024*1024;
+			const u32 size = 20*1024*1024; // 20MB
 			data = (u8*)malloc(size*sizeof(u8));
 			memset(data, 0, size*sizeof(u8));
-			sizeb = size << 3;
+			capb = size << 3;
 			pos_B = pos_b = 0;
 		}
-		if(nbits + pos_b > sizeb)
+		if(nbits + pos_b > capb) // double the size
 		{
 			u32 size = 2*sizeB();
 			u8* dat = (u8*)malloc(size*sizeof(u8));
-			memset(data, 0, size*sizeof(u8));
+			memset(dat, 0, size*sizeof(u8));
 			memcpy(dat, data, sizeB());
-			sizeb = size << 3;
+			capb = size << 3;
 			free(data);
 			data = dat;
 		}
@@ -178,25 +183,29 @@ typedef struct bitfile
 		u32 nbytes = nbits >> 3;
 		u8* src = (u8*)ptr;
 		// copy whole byte(s), pos_b will not changed
-		u32 i;
-		for(i=0; i<nbytes; i++)
+		u32 i = 0;
+		if(pos_b != 0)
 		{
-			if(pos_b)
+			for(i=0; i<nbytes; i++)
 			{
-				data[pos_B] |= (src[i] << pos_b); // [pos_B]
+				byte = (src[i] << pos_b); //move upper
+				data[pos_B] |= byte; // [pos_B]
 				pos_B++;
 				data[pos_B] = (src[i] >> (8-pos_b)); // [pos_B+1]
 			}
-			else
-				data[pos_B++] = src[i];
 		}
-		// copy left bit(s) if have
+		else
+		{
+			memcpy(data+pos_B, src, nbytes);
+			pos_B += nbytes;
+		}
+		// write left bit(s) if have
 		if(bits)
 		{
 			byte = src[i] >> (8-bits);//move to lower bound
-			byte <<= pos_b; // move upper
-			data[pos_B] |= byte; // put to [pos_B]
-			if(bits <= 8-pos_b) // enough in [pos_B]
+			byte <<= pos_b; //move upper
+			data[pos_B] |= byte; //put to [pos_B]
+			if(bits <= 8-pos_b) //enough in [pos_B]
 			{
 				pos_b = pos_b + bits;
 				if(pos_b == 8)
@@ -210,7 +219,7 @@ typedef struct bitfile
 				pos_B++;
 				u32 left = bits - (8-pos_b); //left bits
 				byte = src[i] >> (8-bits);//move to lower bound
-				byte >>= (bits-left);//move left lower, or 8-pos_b
+				byte >>= (bits-left);//move left bits lower, or 8-pos_b
 				data[pos_B] = byte;
 				pos_b = left;
 			}
@@ -219,7 +228,7 @@ typedef struct bitfile
 	}
 	bool eof()
 	{
-		return (pos_B*8 + pos_b)>=sizeb;
+		return sizeb() >= capb;
 	}
 	void close()
 	{
@@ -229,17 +238,24 @@ typedef struct bitfile
 	{
 		if(data)
 			free(data);
+		data = NULL;
 		init();
+	}
+	u32 sizeb()
+	{
+		return pos_B*8 + pos_b;
 	}
 	u32 sizeB()
 	{
-		return sizeb/8 + (sizeb%8)?1:0;
+		return pos_B + (pos_b!=0);
 	}
 	void writeout()
 	{
 		if(otype == READ || data == NULL)
 			return;
 		FILE* fout = fopen(name, "wb");
+		if(fout == NULL)
+			return;
 		fwrite(data, sizeB(), 1, fout);
 		fclose(fout);
 	}
@@ -247,15 +263,15 @@ typedef struct bitfile
 	{
 		data = NULL;
 		strcpy(name, "");
-		sizeb = pos_B = pos_b = 0;
+		capb = pos_B = pos_b = 0;
 	}
 	void info()
 	{
 		if(otype == READ)
-			printf("bitfile info: READ  ");
+			printf("bitfile [%s] info: READ ", name);
 		if(otype == WRITE)
-			printf("bitfile info: WRITE ");
-		printf("%db(%dB) %d.%d\n", sizeb, sizeB(), pos_B, pos_b);
+			printf("bitfile [%s] info: WRITE ", name);
+		printf("%db(%dB) %d.%d %dMB\n", sizeb(), sizeB(), pos_B, pos_b, capb>>23);
 	}
 }bitfile;
 
