@@ -128,7 +128,6 @@ typedef struct bitfile
 			if(bits <= 8-pos_b) // enough in [pos_B]
 			{
 				byte &= (0xFF >> (8-bits)); //just need bits bit(s)
-				//byte <<= (8-bits); //move to upper bound!!!!not need
 				pos_b = pos_b + bits;
 				if(pos_b == 8)
 				{
@@ -201,7 +200,7 @@ typedef struct bitfile
 		// write left bit(s) if have
 		if(bits)
 		{
-			//byte = src[nbytes] >> (8-bits);//move to lower bound!!!!!not need
+			byte = src[nbytes];
 			byte <<= pos_b; //move upper
 			data[pos_B] |= byte; //put to [pos_B]
 			if(bits <= 8-pos_b) //enough in [pos_B]
@@ -217,7 +216,7 @@ typedef struct bitfile
 			{
 				pos_B++;
 				u32 left = bits - (8-pos_b); //left bits
-				//byte = src[nbytes] >> (8-bits);//move to lower bound!!!!not need
+				byte = src[nbytes];
 				byte >>= (bits-left);//move left bits lower, or 8-pos_b
 				data[pos_B] = byte;
 				pos_b = left;

@@ -33,6 +33,7 @@ void printBits(const u8* ptr, u32 nbits)
 		byte &= (0xFF >> (8-bits));
 		printByte(byte);
 	}
+	printf("%d bits\n", nbits);
 }
 
 int main(int argc, char* argv[])
@@ -52,10 +53,11 @@ int main(int argc, char* argv[])
 	bfin.info();
 	bfout.info();
 	u32 sum = 0;
+	srand((unsigned int)time(NULL));
 	while(!bfin.eof())
 	{
 		u32 rbits, read, write;
-		rbits = rand()%128;
+		rbits = rand()%48;
 		read = bfin.readb(buffer, rbits);
 		//printBits(buffer, read);
 		//getchar();
