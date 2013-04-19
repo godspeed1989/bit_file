@@ -11,10 +11,7 @@ typedef unsigned int       u32;
 typedef unsigned long long u64;
 
 enum O_TYPE {READ, WRITE};
-// 1. The bitfile only can be 'just READ' or 'just WRITE'
-// 2. The whole class is little-endian, not matter byte or bit, that is,
-//    read/write from low byte/bit to high byte/bit
-// 3. file size can't exceed 512MB
+
 typedef struct bitfile
 {
 	O_TYPE otype;
@@ -226,6 +223,16 @@ typedef struct bitfile
 			}
 		}
 		return nbits;
+	}
+	/* from WRITE to READ mode, read from start */
+	u32 write_to_read()
+	{
+		if(otype==READ || data==NULL || sizeb()==0 || capb==0)
+			return -1;
+		otype = READ;
+		capb = sizeb();
+		pos_B = pos_b = 0;
+		return 0;
 	}
 	bool eof()
 	{

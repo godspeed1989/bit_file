@@ -49,8 +49,10 @@ void file_test(const char * file)
 	static u8 buffer[buf_size];
 	static char filename[128];
 	if(bfin.open(file, READ)) // open read file bfin
+	{
 		printf("File [%s] open error\n", file);
-	
+		return;
+	}
 	strcpy(filename, file);
 	strcat(filename, ".out");
 	bfout.open(filename, WRITE); // open write file bfout
@@ -93,9 +95,7 @@ void stdstr_test()
 		buffer[i] = rand()%255;
 	}
 	sfin.open("str_in", buffer, buf_size);
-	sfin.pos_B = rand() % buf_size;
-	sfin.pos_b = rand() % 8;
-	sfin.capb = sfin.sizeb();
+	sfin.capb = (rand() % buf_size)*8 + rand() % 8;
 	sfout.open("str_out", WRITE);
 	sfin.info();
 	sfout.info();
@@ -113,7 +113,7 @@ void stdstr_test()
 		write = sfout.writeb(buffer, read);
 		if(read != write)
 		{
-			printf("Error: Read %d and Write %d", read, write);
+			printf("Error: Read %d and Write %d\n", read, write);
 			break;
 		}
 		sum += read;
@@ -121,7 +121,7 @@ void stdstr_test()
 	printf("Total %d bits\n", sum);
 	sfin.info();
 	sfout.info();
-	if(sfin.sizeb() != sfin.sizeb())
+	if(sfin.sizeb() != sfout.sizeb())
 		printf("Error: size not match.\n");
 	for(u32 i=0; i<sfin.sizeB() && i<sfout.sizeB(); i++)
 	{
@@ -137,16 +137,16 @@ int main(int argc, char* argv[])
 {
 	clock_t start;
 
-	printf("***File read and write test......\n");
+	printf("***Stdstr read and write test......\n");
 	start = clock();
-	file_test(argv[1]);
+	stdstr_test();
 	printf("Finish. Time %1.2lf sec.\n", double(clock()-start)/CLOCKS_PER_SEC);
 
 	if(argc < 2)
 		return 1;
-	printf("***Stdstr read and write test......\n");
+	printf("***File read and write test......\n");
 	start = clock();
-	stdstr_test();
+	file_test(argv[1]);
 	printf("Finish. Time %1.2lf sec.\n", double(clock()-start)/CLOCKS_PER_SEC);
 
 	return 0;
