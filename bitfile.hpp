@@ -24,7 +24,7 @@ typedef struct bitfile
 
 	bitfile()
 	{
-		name = (char*)malloc(1024*sizeof(char));
+		name = (char*)malloc(1024 * sizeof(char));
 		init();
 	}
 	~bitfile()

@@ -92,7 +92,7 @@ void stdstr_test()
 	srand((unsigned int)time(NULL));
 	for(u32 i=0; i < buf_size; i++)
 	{
-		buffer[i] = rand()%255;
+		buffer[i] = rand() % 255;
 	}
 	sfin.open("str_in", buffer, buf_size);
 	sfin.capb = (rand() % buf_size)*8 + rand() % 8;
@@ -133,6 +133,27 @@ void stdstr_test()
 	}
 }
 
+void test_wirte2read()
+{
+	bitfile bfile;
+	static const u32 buf_size = 256;
+	static u8 buffer1[buf_size], buffer2[buf_size];
+	srand((unsigned int)time(NULL));
+	for(u32 i=0; i < buf_size; i++)
+	{
+		buffer1[i] = rand() % 255;
+	}
+	bfile.open("write_read", WRITE);
+	bfile.writeB(buffer1, buf_size);
+	bfile.write_to_read();
+	bfile.readB(buffer2, buf_size);
+	for(u32 i=0; i < buf_size; i++)
+	{
+		if(buffer1[i] != buffer2[i])
+			printf("Error: data [%d] not match.\n", i);
+	}
+}
+
 int main(int argc, char* argv[])
 {
 	clock_t start;
@@ -140,14 +161,19 @@ int main(int argc, char* argv[])
 	printf("***Stdstr read and write test......\n");
 	start = clock();
 	stdstr_test();
-	printf("Finish. Time %1.2lf sec.\n", double(clock()-start)/CLOCKS_PER_SEC);
+	printf("Finished. Time %1.2lf sec.\n", double(clock()-start)/CLOCKS_PER_SEC);
+
+	printf("***Write to read test......\n");
+	start = clock();
+	stdstr_test();
+	printf("Finished. Time %1.2lf sec.\n", double(clock()-start)/CLOCKS_PER_SEC);
 
 	if(argc < 2)
 		return 1;
 	printf("***File read and write test......\n");
 	start = clock();
 	file_test(argv[1]);
-	printf("Finish. Time %1.2lf sec.\n", double(clock()-start)/CLOCKS_PER_SEC);
+	printf("Finished. Time %1.2lf sec.\n", double(clock()-start)/CLOCKS_PER_SEC);
 
 	return 0;
 }

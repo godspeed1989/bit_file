@@ -7,7 +7,7 @@ A bit oriented file/stdstr reader/writer.
 
 ###NOTICE
 1. The bitfile only can be 'just READ' or 'just WRITE'.
-   You can convert WRITE to READ mode using `write_to_read`.
+   You can convert WRITE to READ mode using `write_to_read()`.
 2. The whole process is little-endian, not matter byte or bit, that is,
    read/write from low byte/bit to high byte/bit.
 3. The program only run on little-endian mach.
