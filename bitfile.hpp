@@ -20,7 +20,7 @@ typedef struct bitfile
 	u32 capb;   // file capacity in BITS
 	// file position in bits = pos_B<<3 + pos_b
 	u32 pos_B;  // file pointer in Bytes
-	u8 pos_b;   // file pointer in bits(0~7), 0 ~ 'pos_b' is reached
+	u8 pos_b;   // file pointer in bits(0~7), 0 ~ 'pos_b-1' is reached
 
 	bitfile()
 	{
