@@ -1,4 +1,4 @@
-##file/stdstr BIT reader/writer
+##BIT oriented file/stdstr reader/writer
 
 A bit oriented file/stdstr reader/writer.    
 
@@ -11,5 +11,5 @@ A bit oriented file/stdstr reader/writer.
 2. The whole process is little-endian, not matter byte or bit, that is,
    read/write from low byte/bit to high byte/bit.
 3. The program only run on little-endian mach.
-4. File size couldn't exceed 512MB.
+4. File size can't exceed 512MB.
 
