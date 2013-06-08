@@ -15,12 +15,12 @@ enum O_TYPE {READ, WRITE};
 typedef struct bitfile
 {
 	O_TYPE otype;
-	char * name;// file name
-	u8 * data;  // file data
-	u32 capb;   // file capacity in BITS
+	char * name; // file name
+	u8 * data;   // file data
+	u32 capb;    // file capacity in BITS
 	// file position in bits = pos_B<<3 + pos_b
-	u32 pos_B;  // file pointer in Bytes
-	u8 pos_b;   // file pointer in bits(0~7), 0 ~ 'pos_b-1' is reached
+	u32 pos_B;   // file pointer in Bytes
+	u8 pos_b;    // file pointer in bits(0~7), 0 ~ 'pos_b-1' is reached
 
 	bitfile()
 	{
@@ -47,7 +47,7 @@ typedef struct bitfile
 			fseek(fin, 0, SEEK_END);
 			u32 filesize = ftell(fin);
 			capb = filesize << 3;
-			data = (u8*)malloc(filesize * sizeof(u8));
+			data = (u8*)malloc(filesize);
 			if(data == NULL)
 				return -1;
 			fseek(fin, 0, SEEK_SET);
@@ -66,7 +66,7 @@ typedef struct bitfile
 			return -1;
 	}
 	// Open a bitfile from stdstr, READ only
-	u32 open(const char *file, u8 *dat, u32 nbytes)
+	u32 open(const char *file, void *dat, u32 nbytes)
 	{
 		if(file==NULL || dat == NULL || nbytes == 0)
 			return -1;
@@ -74,7 +74,7 @@ typedef struct bitfile
 		otype = READ;
 		strcpy(name, file);
 		capb = nbytes << 3;
-		data = (u8*)malloc(nbytes * sizeof(u8));
+		data = (u8*)malloc(nbytes);
 		if(data)
 			return -1;
 		memcpy(data, dat, nbytes);
