@@ -75,7 +75,7 @@ typedef struct bitfile
 		strcpy(name, file);
 		capb = nbytes << 3;
 		data = (u8*)malloc(nbytes);
-		if(data)
+		if(data == NULL)
 			return -1;
 		memcpy(data, dat, nbytes);
 		return 0;
