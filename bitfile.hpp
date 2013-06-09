@@ -82,18 +82,21 @@ typedef struct bitfile
 	}
 	
 	/* Read functions */
-	/* Read nbytes byte(s), return num of bit(s) actual read. */
+	/* Read nbytes byte(s), return num of bit(s) actually read. */
 	u32 readB(void *ptr, u32 nbytes)
 	{
 		return readb(ptr, nbytes<<3);
 	}
-	/* Read nbits bit(s), return num of bit(s) actual read. */
+	/* Read nbits bit(s), return num of bit(s) actually read. */
 	u32 readb(void *ptr, u32 nbits)
 	{
 		if(otype == WRITE || eof())
 			return 0;
 		if(sizeb() + nbits >= capb)// not enough to read
+		{
 			nbits = capb - sizeb();
+			printf("bitfile: %s not enough to read, adjust to %u bits\n", name, nbits);
+		}
 		u8 byte, tmpb;
 		u8 bits = nbits % 8;
 		u32 nbytes = nbits >> 3;
