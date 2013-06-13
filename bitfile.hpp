@@ -92,7 +92,7 @@ typedef struct bitfile
 	{
 		if(otype == WRITE || eof())
 			return 0;
-		if(sizeb() + nbits >= capb)// not enough to read
+		if(sizeb() + nbits > capb)// not enough to read
 		{
 			nbits = capb - sizeb();
 			printf("bitfile: %s not enough to read, adjust to %u bits\n", name, nbits);
