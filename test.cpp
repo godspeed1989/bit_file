@@ -41,48 +41,6 @@ void printBits(const u8* ptr, u32 nbits)
 }
 #endif
 
-void file_test(const char * file)
-{
-	bitfile bfin;
-	bitfile bfout;
-	static const u32 buf_size = 256;
-	static u8 buffer[buf_size];
-	static char filename[128];
-	if(bfin.open(file, READ)) // open read file bfin
-	{
-		printf("File [%s] open error\n", file);
-		return;
-	}
-	strcpy(filename, file);
-	strcat(filename, ".out");
-	bfout.open(filename, WRITE); // open write file bfout
-	bfin.info();
-	bfout.info();
-	u32 sum = 0;
-	srand((unsigned int)time(NULL));
-	while(!bfin.eof())
-	{
-		u32 rbits, read, write;
-		rbits = rand() % 16;
-		read = bfin.readb(buffer, rbits);
-#ifdef DEBUG
-		printBits(buffer, read);
-		getchar();
-#endif
-		write = bfout.writeb(buffer, read);
-		if(read != write)
-		{
-			printf("Error: Read %d and Write %d", read, write);
-			break;
-		}
-		sum += read;
-	}
-	printf("Total %d bits\n", sum);
-	bfin.info();
-	bfout.info();
-	bfout.writeout();
-}
-
 void stdstr_test()
 {
 	bitfile sfin;
@@ -133,7 +91,7 @@ void stdstr_test()
 	}
 }
 
-void test_wirte2read()
+void test_write2read()
 {
 	bitfile bfile;
 	static const u32 buf_size = 256;
@@ -165,14 +123,7 @@ int main(int argc, char* argv[])
 
 	printf("***Write to read test......\n");
 	start = clock();
-	stdstr_test();
-	printf("Finished. Time %1.2lf sec.\n", double(clock()-start)/CLOCKS_PER_SEC);
-
-	if(argc < 2)
-		return 1;
-	printf("***File read and write test......\n");
-	start = clock();
-	file_test(argv[1]);
+	test_write2read();
 	printf("Finished. Time %1.2lf sec.\n", double(clock()-start)/CLOCKS_PER_SEC);
 
 	return 0;
