@@ -53,7 +53,7 @@ void stdstr_test()
 		buffer[i] = rand() % 255;
 	}
 	sfin.open("str_in", buffer, buf_size);
-	sfin.capb = (rand() % buf_size)*8 + rand() % 8;
+	sfin.capb = (rand() % buf_size) * 8;
 	sfout.open("str_out", WRITE);
 	sfin.info();
 	sfout.info();
@@ -79,9 +79,9 @@ void stdstr_test()
 	printf("Total %d bits\n", sum);
 	sfin.info();
 	sfout.info();
-	if(sfin.sizeb() != sfout.sizeb())
+	if(sfin.ftellb() != sfout.ftellb())
 		printf("Error: size not match.\n");
-	for(u32 i=0; i<sfin.sizeB() && i<sfout.sizeB(); i++)
+	for(u32 i=0; i<sfin.ftellB() && i<sfout.ftellB(); i++)
 	{
 		if(sfin.data[i] != sfout.data[i])
 		{

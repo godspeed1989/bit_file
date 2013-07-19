@@ -92,9 +92,9 @@ typedef struct bitfile
 	{
 		if(otype == WRITE || eof())
 			return 0;
-		if(sizeb() + nbits > capb)// not enough to read
+		if(ftellb() + nbits > capb)// not enough to read
 		{
-			nbits = capb - sizeb();
+			nbits = capb - ftellb();
 			printf("bitfile: %s not enough to read, adjust to %u bits\n", name, nbits);
 		}
 		u8 byte, tmpb;
@@ -170,12 +170,12 @@ typedef struct bitfile
 			capb = size << 3;
 			pos_B = pos_b = 0;
 		}
-		if(nbits + sizeb() > capb) //capacity not enough, double the size
+		if(nbits + ftellb() > capb) //capacity not enough, double the size
 		{
-			u32 size = 2 * sizeB();
+			u32 size = 2 * ftellB();
 			u8* dat = (u8*)malloc(size * sizeof(u8));
 			memset(dat, 0, size * sizeof(u8));
-			memcpy(dat, data, sizeB());
+			memcpy(dat, data, ftellB());
 			capb = size << 3;
 			free(data);
 			data = dat;
@@ -227,19 +227,19 @@ typedef struct bitfile
 		}
 		return nbits;
 	}
-	/* from WRITE to READ mode, read from start */
+	/* switch from WRITE mode to READ mode, seek to start */
 	u32 write_to_read()
 	{
-		if(otype==READ || data==NULL || sizeb()==0 || capb==0)
+		if(otype==READ || data==NULL || ftellb()==0 || capb==0)
 			return -1;
 		otype = READ;
-		capb = sizeb();
+		capb = ftellb();
 		pos_B = pos_b = 0;
 		return 0;
 	}
 	bool eof()
 	{
-		return sizeb() >= capb;
+		return ftellb() >= capb;
 	}
 	void close()
 	{
@@ -252,22 +252,24 @@ typedef struct bitfile
 		data = NULL;
 		init();
 	}
-	u32 sizeb()
+	/* tell the read/write position of file */
+	u32 ftellb()
 	{
 		return pos_B * 8 + pos_b;
 	}
-	u32 sizeB()
+	u32 ftellB()
 	{
 		return pos_B + (pos_b!=0);
 	}
-	void writeout()
+	/* write otu file to the disk */
+	void write_out()
 	{
 		if(otype == READ || data == NULL)
 			return;
 		FILE* fout = fopen(name, "wb");
 		if(fout == NULL)
 			return;
-		fwrite(data, sizeB(), 1, fout);
+		fwrite(data, ftellB(), 1, fout);
 		fclose(fout);
 	}
 	void init()
@@ -279,10 +281,15 @@ typedef struct bitfile
 	void info()
 	{
 		if(otype == READ)
+		{
 			printf("bitfile [%s] info: READ ", name);
-		if(otype == WRITE)
+			printf("size=%db(%dB) %d.%d\n", capb, capb>>13, pos_B, pos_b);
+		}
+		else if(otype == WRITE)
+		{
 			printf("bitfile [%s] info: WRITE ", name);
-		printf("%db(%dB) %d.%d %dKB\n", sizeb(), sizeB(), pos_B, pos_b, capb>>13);
+			printf("size=%db %d.%d capb=%dKB\n", ftellb(), pos_B, pos_b, capb>>13);
+		}
 	}
 }bitfile;
 
