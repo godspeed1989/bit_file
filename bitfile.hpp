@@ -65,7 +65,7 @@ typedef struct bitfile
 		else
 			return -1;
 	}
-	// Open a bitfile from stdstr, READ only
+	// Open a bitfile from memory, READ only
 	u32 open(const char *file, void *dat, u32 nbytes)
 	{
 		if(file==NULL || dat == NULL || nbytes == 0)
@@ -172,7 +172,7 @@ typedef struct bitfile
 		}
 		if(nbits + ftellb() > capb) //capacity not enough, double the size
 		{
-			u32 size = 2 * ftellB();
+			u32 size = 2 * ((capb>>3) + 1);
 			u8* dat = (u8*)malloc(size * sizeof(u8));
 			memset(dat, 0, size * sizeof(u8));
 			memcpy(dat, data, ftellB());
