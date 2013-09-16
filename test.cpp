@@ -81,7 +81,7 @@ void stdstr_test()
 	sfout.info();
 	if(sfin.ftellb() != sfout.ftellb())
 		printf("Error: size not match.\n");
-	for(u32 i=0; i<sfin.ftellB() && i<sfout.ftellB(); i++)
+	for(u32 i=0; i<sfin.sizeB() && i<sfout.sizeB(); i++)
 	{
 		if(sfin.data[i] != sfout.data[i])
 		{
@@ -103,7 +103,7 @@ void test_write2read()
 	}
 	bfile.open("write_read", WRITE);
 	bfile.writeB(buffer1, buf_size);
-	bfile.write_to_read();
+	bfile.pos_B = bfile.pos_b = 0;
 	bfile.readB(buffer2, buf_size);
 	for(u32 i=0; i < buf_size; i++)
 	{

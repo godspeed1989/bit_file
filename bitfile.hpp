@@ -14,16 +14,15 @@ enum O_TYPE {READ, WRITE};
 
 typedef struct bitfile
 {
-	O_TYPE otype;
-	char * name; // file name
-	u8 * data;   // file data
-	u32 capb;    // file capacity in BITS
-	// file position in bits = pos_B<<3 + pos_b
-	u32 pos_B;   // file pointer in Bytes
-	u8 pos_b;    // file pointer in bits(0~7), 0 ~ 'pos_b-1' is reached
+	char * name; // stream name
+	u8 * data;   // stream data
+	u32 capb;    // stream capacity in BITS
+	u32 pos_B;   // stream pointer in Byte
+	u8 pos_b;    // stream pointer in bit (0~7)
 
 	bitfile()
 	{
+		data = NULL;
 		name = (char*)malloc(1024 * sizeof(char));
 		init();
 	}
@@ -33,16 +32,20 @@ typedef struct bitfile
 		if(data)
 			free(data);
 	}
-	// Open a bitfile, READ or WRITE
+	void init()
+	{
+		strcpy(name, "");
+		capb = pos_B = pos_b = 0;
+	}
+	// Open a bitfile
 	u32 open(const char *file, O_TYPE ot)
 	{
-		if(ot == READ) // read in from existing file
+		if(ot == READ) // read in from a existing file
 		{
 			FILE * fin = fopen(file, "rb");
 			if(fin == NULL)
 				return -1;
 			clean_and_init();
-			otype = ot;
 			strcpy(name, file);
 			fseek(fin, 0, SEEK_END);
 			u32 filesize = ftell(fin);
@@ -58,21 +61,19 @@ typedef struct bitfile
 		else if(ot == WRITE)
 		{
 			clean_and_init();
-			otype = ot;
 			strcpy(name, file);
 			return 0; // do nothing, wait for first write
 		}
 		else
 			return -1;
 	}
-	// Open a bitfile from memory, READ only
-	u32 open(const char *file, void *dat, u32 nbytes)
+	// Open a bitfile from memory
+	u32 open(const char *filename, void *dat, u32 nbytes)
 	{
-		if(file==NULL || dat == NULL || nbytes == 0)
+		if(filename == NULL || dat == NULL || nbytes == 0)
 			return -1;
 		clean_and_init();
-		otype = READ;
-		strcpy(name, file);
+		strcpy(name, filename);
 		capb = nbytes << 3;
 		data = (u8*)malloc(nbytes);
 		if(data == NULL)
@@ -90,7 +91,7 @@ typedef struct bitfile
 	/* Read nbits bit(s), return num of bit(s) actually read. */
 	u32 readb(void *ptr, u32 nbits)
 	{
-		if(otype == WRITE || eof())
+		if(eof())
 			return 0;
 		if(ftellb() + nbits > capb)// not enough to read
 		{
@@ -160,8 +161,6 @@ typedef struct bitfile
 	/* Write nbits bit(s), return num of bit(s) actual written. */
 	u32 writeb(void *ptr, u32 nbits)
 	{
-		if(otype == READ)
-			return 0;
 		if(data == NULL)
 		{
 			const u32 size = 25*1024*1024; // 25MB
@@ -175,7 +174,7 @@ typedef struct bitfile
 			u32 size = 2 * ((capb>>3) + 1);
 			u8* dat = (u8*)malloc(size * sizeof(u8));
 			memset(dat, 0, size * sizeof(u8));
-			memcpy(dat, data, ftellB());
+			memcpy(dat, data, sizeB());
 			capb = size << 3;
 			free(data);
 			data = dat;
@@ -227,19 +226,9 @@ typedef struct bitfile
 		}
 		return nbits;
 	}
-	/* switch from WRITE mode to READ mode, seek to start */
-	u32 write_to_read()
-	{
-		if(otype==READ || data==NULL || ftellb()==0 || capb==0)
-			return -1;
-		otype = READ;
-		capb = ftellb();
-		pos_B = pos_b = 0;
-		return 0;
-	}
 	bool eof()
 	{
-		return ftellb() >= capb;
+		return (ftellb() == capb);
 	}
 	void close()
 	{
@@ -252,44 +241,28 @@ typedef struct bitfile
 		data = NULL;
 		init();
 	}
-	/* tell the read/write position of file */
+	/* tell the read/write position of stream */
 	u32 ftellb()
 	{
 		return pos_B * 8 + pos_b;
 	}
-	u32 ftellB()
+	u32 sizeB()
 	{
 		return pos_B + (pos_b!=0);
 	}
 	/* write otu file to the disk */
 	void write_out()
 	{
-		if(otype == READ || data == NULL)
-			return;
 		FILE* fout = fopen(name, "wb");
 		if(fout == NULL)
 			return;
-		fwrite(data, ftellB(), 1, fout);
+		fwrite(data, sizeB(), 1, fout);
 		fclose(fout);
-	}
-	void init()
-	{
-		data = NULL;
-		strcpy(name, "");
-		capb = pos_B = pos_b = 0;
 	}
 	void info()
 	{
-		if(otype == READ)
-		{
-			printf("bitfile [%s] info: READ ", name);
-			printf("size=%db(%dB) %d.%d\n", capb, capb>>13, pos_B, pos_b);
-		}
-		else if(otype == WRITE)
-		{
-			printf("bitfile [%s] info: WRITE ", name);
-			printf("size=%db %d.%d capb=%dKB\n", ftellb(), pos_B, pos_b, capb>>13);
-		}
+		printf("bitfile [%s] info: WRITE ", name);
+		printf("size=%db pos_B=%d pos_b=%d capb=%dKB\n", ftellb(), pos_B, pos_b, capb>>13);
 	}
 }bitfile;
 
